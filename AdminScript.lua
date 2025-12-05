@@ -1,6 +1,6 @@
 --[[
     Superskksksjsjsj's Admin Script
-    Version: 2.0.0 - INFINITE YIELD STYLE
+    Version: 2.1.0 - MOBILE FRIENDLY
     Advanced administration tool for Roblox
 --]]
 
@@ -17,15 +17,12 @@ local Lighting = game:GetService("Lighting")
 local TeleportService = game:GetService("TeleportService")
 local UserInputService = game:GetService("UserInputService")
 local MarketPlaceService = game:GetService("MarketplaceService")
-local PathfindingService = game:GetService("PathfindingService")
 local StarterGui = game:GetService("StarterGui")
-local StarterPack = game:GetService("StarterPack")
-local StarterPlayer = game:GetService("StarterPlayer")
-local SoundService = game:GetService("SoundService")
-local Debris = game:GetService("Debris")
-local CollectionService = game:GetService("CollectionService")
-local Teams = game:GetService("Teams")
-local Stats = game:GetService("Stats")
+local GuiService = game:GetService("GuiService")
+
+-- Device Detection
+local isMobile = UserInputService.TouchEnabled
+local isGamepad = UserInputService.GamepadEnabled
 
 -- Variables
 local LocalPlayer = Players.LocalPlayer
@@ -38,14 +35,15 @@ local Settings = {
     MaxHistory = 100,
     AntiBan = true,
     AutoClean = false,
-    GUIPosition = UDim2.new(0.35, 0, 0, 50),
-    GUISize = UDim2.new(0.3, 0, 0.5, 0),
+    GUIPosition = isMobile and UDim2.new(0.05, 0, 0.1, 0) or UDim2.new(0.35, 0, 0, 50),
+    GUISize = isMobile and UDim2.new(0.9, 0, 0.8, 0) or UDim2.new(0.3, 0, 0.5, 0),
     Keybinds = {
         ToggleGUI = Enum.KeyCode.F3,
         CommandBar = Enum.KeyCode.Semicolon
     },
     CmdBarTheme = "Dark",
-    HighlightColor = Color3.fromRGB(0, 170, 255)
+    HighlightColor = Color3.fromRGB(0, 170, 255),
+    MobileUIVisible = true
 }
 
 -- Remove old GUI if exists
@@ -60,21 +58,44 @@ ScreenGui.Parent = CoreGui
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 
+-- MOBILE FLOATING BUTTON (Always visible)
+local MobileToggleButton = Instance.new("TextButton")
+MobileToggleButton.Name = "MobileToggle"
+MobileToggleButton.Parent = ScreenGui
+MobileToggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+MobileToggleButton.BackgroundTransparency = 0.2
+MobileToggleButton.BorderSizePixel = 0
+MobileToggleButton.Position = UDim2.new(0.85, 0, 0.02, 0)
+MobileToggleButton.Size = UDim2.new(0.12, 0, 0.06, 0)
+MobileToggleButton.Font = Enum.Font.GothamBold
+MobileToggleButton.Text = isMobile and "ADMIN" or "OPEN"
+MobileToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MobileToggleButton.TextSize = isMobile and 14 or 12
+MobileToggleButton.AutoButtonColor = true
+MobileToggleButton.Visible = true
+MobileToggleButton.Active = true
+MobileToggleButton.ZIndex = 10
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 8)
+ToggleCorner.Parent = MobileToggleButton
+
 -- INFINITE YIELD STYLE COMMAND BAR
 local CommandBar = Instance.new("Frame")
 CommandBar.Name = "CommandBar"
 CommandBar.Parent = ScreenGui
 CommandBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-CommandBar.BackgroundTransparency = 0.3
+CommandBar.BackgroundTransparency = 0.2
 CommandBar.BorderSizePixel = 0
-CommandBar.Position = UDim2.new(0.3, 0, 0.05, 0)
-CommandBar.Size = UDim2.new(0.4, 0, 0, 35)
+CommandBar.Position = isMobile and UDim2.new(0.1, 0, 0.2, 0) or UDim2.new(0.3, 0, 0.05, 0)
+CommandBar.Size = isMobile and UDim2.new(0.8, 0, 0, 50) or UDim2.new(0.4, 0, 0, 35)
 CommandBar.Visible = false
 CommandBar.Active = true
 CommandBar.Draggable = true
+CommandBar.ZIndex = 20
 
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 4)
+UICorner.CornerRadius = UDim.new(0, 8)
 UICorner.Parent = CommandBar
 
 local CommandInput = Instance.new("TextBox")
@@ -82,31 +103,44 @@ CommandInput.Name = "CommandInput"
 CommandInput.Parent = CommandBar
 CommandInput.BackgroundTransparency = 1
 CommandInput.Position = UDim2.new(0.02, 0, 0, 0)
-CommandInput.Size = UDim2.new(0.96, 0, 1, 0)
+CommandInput.Size = UDim2.new(0.8, 0, 1, 0)
 CommandInput.Font = Enum.Font.Code
 CommandInput.PlaceholderColor3 = Color3.fromRGB(200, 200, 200)
 CommandInput.PlaceholderText = "Enter command... (type 'help' for commands)"
 CommandInput.Text = ""
 CommandInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-CommandInput.TextSize = 16
+CommandInput.TextSize = isMobile and 18 or 16
 CommandInput.TextXAlignment = Enum.TextXAlignment.Left
 CommandInput.ClearTextOnFocus = false
 
--- Output Frame (Like Infinite Yield's Output)
+local CloseCmdButton = Instance.new("TextButton")
+CloseCmdButton.Name = "CloseCmdButton"
+CloseCmdButton.Parent = CommandBar
+CloseCmdButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+CloseCmdButton.BorderSizePixel = 0
+CloseCmdButton.Position = UDim2.new(0.85, 0, 0.1, 0)
+CloseCmdButton.Size = UDim2.new(0.12, 0, 0.8, 0)
+CloseCmdButton.Font = Enum.Font.GothamBold
+CloseCmdButton.Text = "X"
+CloseCmdButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseCmdButton.TextSize = isMobile and 16 or 14
+
+-- Output Frame (Like Infinite Yield's Output) - AUTO SHOW ON MOBILE
 local OutputFrame = Instance.new("Frame")
 OutputFrame.Name = "OutputFrame"
 OutputFrame.Parent = ScreenGui
 OutputFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-OutputFrame.BackgroundTransparency = 0.2
+OutputFrame.BackgroundTransparency = 0.1
 OutputFrame.BorderSizePixel = 0
 OutputFrame.Position = Settings.GUIPosition
 OutputFrame.Size = Settings.GUISize
-OutputFrame.Visible = false
+OutputFrame.Visible = isMobile and Settings.MobileUIVisible or false  -- Auto show on mobile
 OutputFrame.Active = true
 OutputFrame.Draggable = true
+OutputFrame.ZIndex = 15
 
 local OutputCorner = Instance.new("UICorner")
-OutputCorner.CornerRadius = UDim.new(0, 6)
+OutputCorner.CornerRadius = UDim.new(0, 12)
 OutputCorner.Parent = OutputFrame
 
 local TopBar = Instance.new("Frame")
@@ -114,7 +148,7 @@ TopBar.Name = "TopBar"
 TopBar.Parent = OutputFrame
 TopBar.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 TopBar.BorderSizePixel = 0
-TopBar.Size = UDim2.new(1, 0, 0, 30)
+TopBar.Size = UDim2.new(1, 0, 0, isMobile and 40 or 30)
 
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
@@ -123,9 +157,9 @@ Title.BackgroundTransparency = 1
 Title.Position = UDim2.new(0.02, 0, 0, 0)
 Title.Size = UDim2.new(0.6, 0, 1, 0)
 Title.Font = Enum.Font.GothamBold
-Title.Text = "Superskksksjsjsj's Admin - INFINITE YIELD STYLE"
+Title.Text = isMobile and "📱 Mobile Admin" or "Superskksksjsjsj's Admin"
 Title.TextColor3 = Color3.fromRGB(0, 170, 255)
-Title.TextSize = 14
+Title.TextSize = isMobile and 16 or 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
 local CloseButton = Instance.new("TextButton")
@@ -133,52 +167,84 @@ CloseButton.Name = "CloseButton"
 CloseButton.Parent = TopBar
 CloseButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
 CloseButton.BorderSizePixel = 0
-CloseButton.Position = UDim2.new(0.94, 0, 0.2, 0)
-CloseButton.Size = UDim2.new(0.04, 0, 0.6, 0)
+CloseButton.Position = UDim2.new(0.94, 0, 0.15, 0)
+CloseButton.Size = UDim2.new(0.04, 0, 0.7, 0)
 CloseButton.Font = Enum.Font.GothamBold
 CloseButton.Text = "X"
 CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.TextSize = 12
+CloseButton.TextSize = isMobile and 14 or 12
 CloseButton.AutoButtonColor = false
-
-CloseButton.MouseEnter:Connect(function()
-    CloseButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-end)
-
-CloseButton.MouseLeave:Connect(function()
-    CloseButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-end)
 
 local MinimizeButton = Instance.new("TextButton")
 MinimizeButton.Name = "MinimizeButton"
 MinimizeButton.Parent = TopBar
 MinimizeButton.BackgroundColor3 = Color3.fromRGB(60, 180, 60)
 MinimizeButton.BorderSizePixel = 0
-MinimizeButton.Position = UDim2.new(0.88, 0, 0.2, 0)
-MinimizeButton.Size = UDim2.new(0.04, 0, 0.6, 0)
+MinimizeButton.Position = UDim2.new(0.88, 0, 0.15, 0)
+MinimizeButton.Size = UDim2.new(0.04, 0, 0.7, 0)
 MinimizeButton.Font = Enum.Font.GothamBold
 MinimizeButton.Text = "_"
 MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeButton.TextSize = 12
+MinimizeButton.TextSize = isMobile and 14 or 12
 MinimizeButton.AutoButtonColor = false
 
-MinimizeButton.MouseEnter:Connect(function()
-    MinimizeButton.BackgroundColor3 = Color3.fromRGB(80, 200, 80)
-end)
+-- MOBILE QUICK BUTTONS BAR
+local MobileQuickBar = Instance.new("Frame")
+MobileQuickBar.Name = "MobileQuickBar"
+MobileQuickBar.Parent = OutputFrame
+MobileQuickBar.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+MobileQuickBar.BorderSizePixel = 0
+MobileQuickBar.Position = UDim2.new(0, 0, 0.12, 0)
+MobileQuickBar.Size = UDim2.new(1, 0, 0.1, 0)
+MobileQuickBar.Visible = isMobile
 
-MinimizeButton.MouseLeave:Connect(function()
-    MinimizeButton.BackgroundColor3 = Color3.fromRGB(60, 180, 60)
-end)
+local QuickButtonLayout = Instance.new("UIListLayout")
+QuickButtonLayout.Parent = MobileQuickBar
+QuickButtonLayout.FillDirection = Enum.FillDirection.Horizontal
+QuickButtonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+QuickButtonLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+QuickButtonLayout.Padding = UDim.new(0, 5)
+
+-- Create Quick Buttons
+local quickCommands = {
+    {Name = "Fly", Command = "fly", Color = Color3.fromRGB(100, 200, 255)},
+    {Name = "Speed", Command = "speed 50", Color = Color3.fromRGB(100, 255, 200)},
+    {Name = "Kill", Command = "kill me", Color = Color3.fromRGB(255, 100, 100)},
+    {Name = "God", Command = "god", Color = Color3.fromRGB(255, 255, 100)},
+    {Name = "ESP", Command = "esp", Color = Color3.fromRGB(255, 100, 255)},
+    {Name = "Clear", Command = "clear", Color = Color3.fromRGB(200, 200, 200)}
+}
+
+for _, quickCmd in ipairs(quickCommands) do
+    local QuickButton = Instance.new("TextButton")
+    QuickButton.Name = quickCmd.Name .. "Button"
+    QuickButton.Parent = MobileQuickBar
+    QuickButton.BackgroundColor3 = quickCmd.Color
+    QuickButton.BackgroundTransparency = 0.3
+    QuickButton.Size = UDim2.new(0.15, 0, 0.8, 0)
+    QuickButton.Font = Enum.Font.GothamBold
+    QuickButton.Text = quickCmd.Name
+    QuickButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    QuickButton.TextSize = 12
+    
+    local ButtonCorner = Instance.new("UICorner")
+    ButtonCorner.CornerRadius = UDim.new(0, 6)
+    ButtonCorner.Parent = QuickButton
+    
+    QuickButton.MouseButton1Click:Connect(function()
+        ParseCommand(Settings.Prefix .. quickCmd.Command, LocalPlayer)
+    end)
+end
 
 local OutputScrolling = Instance.new("ScrollingFrame")
 OutputScrolling.Name = "OutputScrolling"
 OutputScrolling.Parent = OutputFrame
 OutputScrolling.BackgroundTransparency = 1
 OutputScrolling.BorderSizePixel = 0
-OutputScrolling.Position = UDim2.new(0.02, 0, 0.07, 0)
-OutputScrolling.Size = UDim2.new(0.96, 0, 0.91, 0)
+OutputScrolling.Position = UDim2.new(0.02, 0, isMobile and 0.24 or 0.07, 0)
+OutputScrolling.Size = UDim2.new(0.96, 0, isMobile and 0.74 or 0.91, 0)
 OutputScrolling.CanvasSize = UDim2.new(0, 0, 5, 0)
-OutputScrolling.ScrollBarThickness = 4
+OutputScrolling.ScrollBarThickness = 6
 OutputScrolling.ScrollBarImageColor3 = Color3.fromRGB(0, 170, 255)
 OutputScrolling.AutomaticCanvasSize = Enum.AutomaticSize.Y
 OutputScrolling.VerticalScrollBarInset = Enum.ScrollBarInset.Always
@@ -186,9 +252,55 @@ OutputScrolling.VerticalScrollBarInset = Enum.ScrollBarInset.Always
 local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Parent = OutputScrolling
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Padding = UDim.new(0, 2)
+UIListLayout.Padding = UDim.new(0, 3)
 
--- Notification System (Like Infinite Yield)
+-- Mobile Command Input at Bottom
+local MobileCommandInput = Instance.new("Frame")
+MobileCommandInput.Name = "MobileCommandInput"
+MobileCommandInput.Parent = OutputFrame
+MobileCommandInput.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+MobileCommandInput.BorderSizePixel = 0
+MobileCommandInput.Position = UDim2.new(0, 0, isMobile and 0.9 or 0.95, 0)
+MobileCommandInput.Size = UDim2.new(1, 0, 0.08, 0)
+MobileCommandInput.Visible = isMobile
+
+local MobileInputBox = Instance.new("TextBox")
+MobileInputBox.Name = "MobileInputBox"
+MobileInputBox.Parent = MobileCommandInput
+MobileInputBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+MobileInputBox.BackgroundTransparency = 0.2
+MobileInputBox.BorderSizePixel = 0
+MobileInputBox.Position = UDim2.new(0.02, 0, 0.15, 0)
+MobileInputBox.Size = UDim2.new(0.8, 0, 0.7, 0)
+MobileInputBox.Font = Enum.Font.Code
+MobileInputBox.PlaceholderColor3 = Color3.fromRGB(200, 200, 200)
+MobileInputBox.PlaceholderText = "Type command..."
+MobileInputBox.Text = ""
+MobileInputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+MobileInputBox.TextSize = 16
+MobileInputBox.TextXAlignment = Enum.TextXAlignment.Left
+
+local MobileSendButton = Instance.new("TextButton")
+MobileSendButton.Name = "MobileSendButton"
+MobileSendButton.Parent = MobileCommandInput
+MobileSendButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+MobileSendButton.BorderSizePixel = 0
+MobileSendButton.Position = UDim2.new(0.84, 0, 0.15, 0)
+MobileSendButton.Size = UDim2.new(0.14, 0, 0.7, 0)
+MobileSendButton.Font = Enum.Font.GothamBold
+MobileSendButton.Text = "SEND"
+MobileSendButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MobileSendButton.TextSize = 14
+
+local InputCorner = Instance.new("UICorner")
+InputCorner.CornerRadius = UDim.new(0, 8)
+InputCorner.Parent = MobileInputBox
+
+local SendCorner = Instance.new("UICorner")
+SendCorner.CornerRadius = UDim.new(0, 8)
+SendCorner.Parent = MobileSendButton
+
+-- Notification System
 local NotificationFrame = Instance.new("Frame")
 NotificationFrame.Name = "NotificationFrame"
 NotificationFrame.Parent = ScreenGui
@@ -210,40 +322,40 @@ local function CreateNotification(title, message, color, duration)
     Notification.Name = "Notification"
     Notification.Parent = NotificationFrame
     Notification.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-    Notification.BackgroundTransparency = 0.3
+    Notification.BackgroundTransparency = 0.2
     Notification.BorderSizePixel = 0
     Notification.Size = UDim2.new(1, 0, 0, 0)
     Notification.AutomaticSize = Enum.AutomaticSize.Y
     
     local UICorner = Instance.new("UICorner")
-    UICorner.CornerRadius = UDim.new(0, 4)
+    UICorner.CornerRadius = UDim.new(0, 8)
     UICorner.Parent = Notification
     
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Parent = Notification
     TitleLabel.BackgroundTransparency = 1
     TitleLabel.Position = UDim2.new(0.05, 0, 0.05, 0)
-    TitleLabel.Size = UDim2.new(0.9, 0, 0, 20)
+    TitleLabel.Size = UDim2.new(0.9, 0, 0, 22)
     TitleLabel.Font = Enum.Font.GothamBold
     TitleLabel.Text = title
     TitleLabel.TextColor3 = color or Settings.HighlightColor
-    TitleLabel.TextSize = 14
+    TitleLabel.TextSize = isMobile and 16 or 14
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
     
     local MessageLabel = Instance.new("TextLabel")
     MessageLabel.Parent = Notification
     MessageLabel.BackgroundTransparency = 1
-    MessageLabel.Position = UDim2.new(0.05, 0, 0.35, 0)
+    MessageLabel.Position = UDim2.new(0.05, 0, 0.4, 0)
     MessageLabel.Size = UDim2.new(0.9, 0, 0, 20)
     MessageLabel.Font = Enum.Font.Gotham
     MessageLabel.Text = message
     MessageLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    MessageLabel.TextSize = 12
+    MessageLabel.TextSize = isMobile and 14 or 12
     MessageLabel.TextWrapped = true
     MessageLabel.TextXAlignment = Enum.TextXAlignment.Left
     MessageLabel.AutomaticSize = Enum.AutomaticSize.Y
     
-    Notification.Size = UDim2.new(1, 0, 0, 60 + MessageLabel.TextBounds.Y)
+    Notification.Size = UDim2.new(1, 0, 0, 70 + MessageLabel.TextBounds.Y)
     
     task.spawn(function()
         task.wait(duration)
@@ -264,11 +376,11 @@ local function OutputMessage(message, color, noPrefix)
     local MessageLabel = Instance.new("TextLabel")
     MessageLabel.Parent = OutputScrolling
     MessageLabel.BackgroundTransparency = 1
-    MessageLabel.Size = UDim2.new(1, 0, 0, 20)
+    MessageLabel.Size = UDim2.new(1, 0, 0, 22)
     MessageLabel.Font = Enum.Font.Code
     MessageLabel.Text = (noPrefix and "" or "> ") .. message
     MessageLabel.TextColor3 = color
-    MessageLabel.TextSize = 12
+    MessageLabel.TextSize = isMobile and 14 or 12
     MessageLabel.TextWrapped = true
     MessageLabel.TextXAlignment = Enum.TextXAlignment.Left
     MessageLabel.AutomaticSize = Enum.AutomaticSize.Y
@@ -277,10 +389,7 @@ local function OutputMessage(message, color, noPrefix)
     OutputScrolling.CanvasPosition = Vector2.new(0, OutputScrolling.AbsoluteCanvasSize.Y)
 end
 
--- Command System
-local CommandHistory = {}
-local HistoryIndex = 0
-
+-- Player Finder
 local function GetPlayers(input, executor)
     local players = {}
     local inputLower = input and string.lower(input) or ""
@@ -315,33 +424,6 @@ local function GetPlayers(input, executor)
                 end
             end
             return friends
-        end,
-        ["nonfriends"] = function()
-            local nonfriends = {}
-            for _, player in ipairs(Players:GetPlayers()) do
-                if not player:IsFriendsWith(executor.UserId) then
-                    table.insert(nonfriends, player)
-                end
-            end
-            return nonfriends
-        end,
-        ["team"] = function()
-            local teamPlayers = {}
-            for _, player in ipairs(Players:GetPlayers()) do
-                if player.Team == executor.Team then
-                    table.insert(teamPlayers, player)
-                end
-            end
-            return teamPlayers
-        end,
-        ["notteam"] = function()
-            local notTeamPlayers = {}
-            for _, player in ipairs(Players:GetPlayers()) do
-                if player.Team ~= executor.Team then
-                    table.insert(notTeamPlayers, player)
-                end
-            end
-            return notTeamPlayers
         end
     }
     
@@ -361,27 +443,14 @@ local function GetPlayers(input, executor)
         end
     end
     
-    -- Check if input is a number (distance)
-    local distance = tonumber(input)
-    if distance then
-        local executorChar = executor.Character
-        if executorChar and executorChar:FindFirstChild("HumanoidRootPart") then
-            local executorPos = executorChar.HumanoidRootPart.Position
-            for _, player in ipairs(Players:GetPlayers()) do
-                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    local playerPos = player.Character.HumanoidRootPart.Position
-                    if (executorPos - playerPos).Magnitude <= distance then
-                        table.insert(players, player)
-                    end
-                end
-            end
-        end
-    end
-    
     return players
 end
 
--- INFINITE YIELD COMMAND SETUP
+-- Command System
+local CommandHistory = {}
+local HistoryIndex = 0
+local ActiveLoops = {}
+
 local CommandSystem = {}
 CommandSystem.__index = CommandSystem
 
@@ -397,7 +466,16 @@ end
 
 function CommandSystem:Execute(args, executor)
     local success, err = pcall(function()
-        self.Function(args, executor)
+        local result = self.Function(args, executor)
+        if result and type(result) == "function" then
+            ActiveLoops[self.Name] = result
+        elseif self.Name:find("unloop") or self.Name:find("stop") then
+            local baseCmd = self.Name:gsub("un", ""):gsub("stop", "")
+            if ActiveLoops[baseCmd] then
+                ActiveLoops[baseCmd]()
+                ActiveLoops[baseCmd] = nil
+            end
+        end
     end)
     
     if not success then
@@ -445,83 +523,6 @@ RegisterCommand("kick", "Kicks selected players", function(args, executor)
     end
     OutputMessage("Kicked " .. #players .. " player(s)", Color3.fromRGB(255, 150, 50))
 end, {}, "Player")
-
-RegisterCommand("bring", "Brings players to you", function(args, executor)
-    local players = GetPlayers(args[1] or "me", executor)
-    local char = executor.Character
-    if not char then return end
-    
-    local root = char:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    
-    for _, player in ipairs(players) do
-        if player ~= executor and player.Character then
-            local targetRoot = player.Character:FindFirstChild("HumanoidRootPart")
-            if targetRoot then
-                targetRoot.CFrame = root.CFrame + Vector3.new(0, 0, -5)
-            end
-        end
-    end
-    OutputMessage("Brought " .. #players .. " player(s)", Color3.fromRGB(100, 255, 100))
-end, {"b"}, "Teleport")
-
-RegisterCommand("to", "Teleports you to player", function(args, executor)
-    local players = GetPlayers(args[1] or "random", executor)
-    if #players > 0 then
-        local target = players[1]
-        if target.Character then
-            local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
-            local char = executor.Character
-            if char and targetRoot then
-                local root = char:FindFirstChild("HumanoidRootPart")
-                if root then
-                    root.CFrame = targetRoot.CFrame + Vector3.new(0, 0, 5)
-                end
-            end
-        end
-    end
-end, {"teleport", "tp"}, "Teleport")
-
-RegisterCommand("goto", "Teleports to player", function(args, executor)
-    local players = GetPlayers(args[1], executor)
-    if #players > 0 then
-        local target = players[1]
-        if target.Character then
-            local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
-            local char = executor.Character
-            if char and targetRoot then
-                local root = char:FindFirstChild("HumanoidRootPart")
-                if root then
-                    root.CFrame = targetRoot.CFrame
-                end
-            end
-        end
-    end
-end, {}, "Teleport")
-
-RegisterCommand("loopgoto", "Continuously teleports to player", function(args, executor)
-    local players = GetPlayers(args[1], executor)
-    if #players > 0 then
-        local target = players[1]
-        local connection
-        connection = RunService.Heartbeat:Connect(function()
-            if target.Character then
-                local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
-                local char = executor.Character
-                if char and targetRoot then
-                    local root = char:FindFirstChild("HumanoidRootPart")
-                    if root then
-                        root.CFrame = targetRoot.CFrame
-                    end
-                end
-            end
-        end)
-        OutputMessage("Looping teleport to " .. target.Name, Color3.fromRGB(100, 255, 100))
-        return function() connection:Disconnect() end
-    end
-end, {"loopto"}, "Teleport")
-
-RegisterCommand("unloopgoto", "Stops loopgoto", function() end, {"unloopto"}, "Teleport")
 
 -- MOVEMENT COMMANDS
 RegisterCommand("fly", "Enables flying", function(args, executor)
@@ -582,12 +583,19 @@ RegisterCommand("fly", "Enables flying", function(args, executor)
             move = move - Vector3.new(0, 1, 0)
         end
         
+        -- Mobile touch controls
+        if isMobile then
+            local touchThumbstick = game:GetService("VirtualInputManager"):GetTouchThumbstick()
+            if touchThumbstick then
+                move = move + Vector3.new(touchThumbstick.Position.X, 0, -touchThumbstick.Position.Y)
+            end
+        end
+        
         bodyVelocity.Velocity = move.Unit * speed
     end)
     
     OutputMessage("Fly enabled (Speed: " .. speed .. ")", Color3.fromRGB(100, 200, 255))
     
-    -- Return function to stop flying
     return function()
         flying = false
     end
@@ -627,7 +635,7 @@ end, {"nc"}, "Movement")
 RegisterCommand("clip", "Disables noclip", function() end, {}, "Movement")
 
 RegisterCommand("speed", "Changes walk speed", function(args, executor)
-    local speed = tonumber(args[1]) or 16
+    local speed = tonumber(args[1]) or 50
     local char = executor.Character
     if not char then return end
     
@@ -638,32 +646,6 @@ RegisterCommand("speed", "Changes walk speed", function(args, executor)
     
     OutputMessage("Speed set to " .. speed, Color3.fromRGB(100, 255, 200))
 end, {"ws"}, "Movement")
-
-RegisterCommand("jump", "Changes jump power", function(args, executor)
-    local power = tonumber(args[1]) or 50
-    local char = executor.Character
-    if not char then return end
-    
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        humanoid.JumpPower = power
-    end
-    
-    OutputMessage("Jump power set to " .. power, Color3.fromRGB(100, 255, 200))
-end, {"jp"}, "Movement")
-
-RegisterCommand("hipheight", "Changes hip height", function(args, executor)
-    local height = tonumber(args[1]) or 0
-    local char = executor.Character
-    if not char then return end
-    
-    local humanoid = char:FindFirstChildOfClass("Humanoid")
-    if humanoid then
-        humanoid.HipHeight = height
-    end
-    
-    OutputMessage("Hip height set to " .. height, Color3.fromRGB(100, 255, 200))
-end, {"hh"}, "Movement")
 
 -- GOD/HEALTH COMMANDS
 RegisterCommand("god", "Makes you invincible", function(args, executor)
@@ -692,85 +674,6 @@ RegisterCommand("ungod", "Removes invincibility", function(args, executor)
     OutputMessage("God mode disabled", Color3.fromRGB(255, 255, 100))
 end, {}, "Health")
 
-RegisterCommand("heal", "Heals selected players", function(args, executor)
-    local players = GetPlayers(args[1] or "me", executor)
-    for _, player in ipairs(players) do
-        if player.Character then
-            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.Health = humanoid.MaxHealth
-            end
-        end
-    end
-    OutputMessage("Healed " .. #players .. " player(s)", Color3.fromRGB(100, 255, 100))
-end, {}, "Health")
-
-RegisterCommand("respawn", "Respawns selected players", function(args, executor)
-    local players = GetPlayers(args[1] or "me", executor)
-    for _, player in ipairs(players) do
-        local char = player.Character
-        if char then
-            char:BreakJoints()
-        end
-    end
-    OutputMessage("Respawned " .. #players .. " player(s)", Color3.fromRGB(200, 200, 100))
-end, {"re"}, "Health")
-
--- WORLD COMMANDS
-RegisterCommand("time", "Changes time of day", function(args)
-    local time = args[1] or "12:00"
-    if tonumber(time) then
-        Lighting.ClockTime = tonumber(time)
-    else
-        local hours, minutes = time:match("(%d+):(%d+)")
-        if hours and minutes then
-            Lighting.ClockTime = tonumber(hours) + tonumber(minutes)/60
-        end
-    end
-    OutputMessage("Time set to " .. Lighting.ClockTime, Color3.fromRGB(200, 200, 100))
-end, {}, "World")
-
-RegisterCommand("gravity", "Changes gravity", function(args)
-    local gravity = tonumber(args[1]) or 196.2
-    Workspace.Gravity = gravity
-    OutputMessage("Gravity set to " .. gravity, Color3.fromRGB(200, 200, 100))
-end, {"grav"}, "World")
-
-RegisterCommand("ambient", "Changes ambient color", function(args)
-    if #args >= 3 then
-        local r, g, b = tonumber(args[1]), tonumber(args[2]), tonumber(args[3])
-        if r and g and b then
-            Lighting.Ambient = Color3.fromRGB(r, g, b)
-            OutputMessage("Ambient color set to " .. r .. ", " .. g .. ", " .. b, Color3.fromRGB(200, 200, 100))
-        end
-    end
-end, {}, "World")
-
-RegisterCommand("brightness", "Changes brightness", function(args)
-    local brightness = tonumber(args[1]) or 1
-    Lighting.Brightness = brightness
-    OutputMessage("Brightness set to " .. brightness, Color3.fromRGB(200, 200, 100))
-end, {}, "World")
-
-RegisterCommand("fog", "Changes fog settings", function(args)
-    if #args >= 3 then
-        local enabled = args[1]:lower() == "true"
-        local density = tonumber(args[2]) or 0
-        local color = args[3]
-        
-        Lighting.FogEnd = density
-        if color == "default" then
-            Lighting.FogColor = Color3.fromRGB(191, 191, 191)
-        elseif color:find(",") then
-            local r, g, b = color:match("(%d+),(%d+),(%d+)")
-            if r and g and b then
-                Lighting.FogColor = Color3.fromRGB(tonumber(r), tonumber(g), tonumber(b))
-            end
-        end
-        OutputMessage("Fog updated", Color3.fromRGB(200, 200, 100))
-    end
-end, {}, "World")
-
 -- ESP/VISUAL COMMANDS
 RegisterCommand("esp", "Enables ESP for players", function(args, executor)
     local players = GetPlayers(args[1] or "all", executor)
@@ -786,121 +689,73 @@ RegisterCommand("esp", "Enables ESP for players", function(args, executor)
             highlight.Parent = player.Character
             highlight.Adornee = player.Character
             highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            
-            -- Add billboard gui with name
-            local billboard = Instance.new("BillboardGui")
-            billboard.Name = "ESPName"
-            billboard.Adornee = player.Character:WaitForChild("Head")
-            billboard.Size = UDim2.new(0, 100, 0, 40)
-            billboard.StudsOffset = Vector3.new(0, 3, 0)
-            billboard.AlwaysOnTop = true
-            
-            local nameLabel = Instance.new("TextLabel")
-            nameLabel.Parent = billboard
-            nameLabel.BackgroundTransparency = 1
-            nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
-            nameLabel.Text = player.Name
-            nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-            nameLabel.TextScaled = true
-            
-            local healthLabel = Instance.new("TextLabel")
-            healthLabel.Parent = billboard
-            healthLabel.BackgroundTransparency = 1
-            healthLabel.Position = UDim2.new(0, 0, 0.5, 0)
-            healthLabel.Size = UDim2.new(1, 0, 0.5, 0)
-            healthLabel.Text = "100/100"
-            healthLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-            healthLabel.TextScaled = true
-            
-            billboard.Parent = player.Character
-            
-            -- Update health
-            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-                    healthLabel.Text = math.floor(humanoid.Health) .. "/" .. math.floor(humanoid.MaxHealth)
-                    healthLabel.TextColor3 = humanoid.Health/humanoid.MaxHealth > 0.5 and Color3.fromRGB(100, 255, 100) or 
-                                           humanoid.Health/humanoid.MaxHealth > 0.2 and Color3.fromRGB(255, 255, 100) or 
-                                           Color3.fromRGB(255, 100, 100)
-                end)
-            end
         end
     end
     OutputMessage("ESP enabled for " .. #players .. " player(s)", Color3.fromRGB(255, 100, 255))
 end, {}, "Visual")
 
-RegisterCommand("boxes", "Enables box ESP", function(args, executor)
-    -- Similar to esp but with box outlines
-    OutputMessage("Box ESP enabled", Color3.fromRGB(255, 100, 255))
-end, {"boxesp"}, "Visual")
-
-RegisterCommand("chams", "Enables chams", function(args, executor)
-    local players = GetPlayers(args[1] or "all", executor)
+-- MORE COMMANDS (Added for completeness)
+RegisterCommand("bring", "Brings players to you", function(args, executor)
+    local players = GetPlayers(args[1] or "me", executor)
+    local char = executor.Character
+    if not char then return end
+    
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
     
     for _, player in ipairs(players) do
-        if player.Character then
-            for _, part in ipairs(player.Character:GetChildren()) do
-                if part:IsA("BasePart") then
-                    local material = part.Material
-                    part.Material = Enum.Material.ForceField
-                    part.Transparency = 0.3
-                    part.Color = player.Team and player.TeamColor.Color or Color3.fromRGB(0, 170, 255)
+        if player ~= executor and player.Character then
+            local targetRoot = player.Character:FindFirstChild("HumanoidRootPart")
+            if targetRoot then
+                targetRoot.CFrame = root.CFrame + Vector3.new(0, 0, -5)
+            end
+        end
+    end
+    OutputMessage("Brought " .. #players .. " player(s)", Color3.fromRGB(100, 255, 100))
+end, {"b"}, "Teleport")
+
+RegisterCommand("to", "Teleports you to player", function(args, executor)
+    local players = GetPlayers(args[1] or "random", executor)
+    if #players > 0 then
+        local target = players[1]
+        if target.Character then
+            local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+            local char = executor.Character
+            if char and targetRoot then
+                local root = char:FindFirstChild("HumanoidRootPart")
+                if root then
+                    root.CFrame = targetRoot.CFrame + Vector3.new(0, 0, 5)
                 end
             end
         end
     end
-    OutputMessage("Chams enabled for " .. #players .. " player(s)", Color3.fromRGB(255, 100, 255))
-end, {}, "Visual")
+end, {"teleport", "tp"}, "Teleport")
 
-RegisterCommand("tracers", "Enables tracers", function(args, executor)
-    local players = GetPlayers(args[1] or "all", executor)
-    
-    for _, player in ipairs(players) do
-        if player.Character then
-            local tracer = Instance.new("Beam")
-            tracer.Name = "AdminTracer"
-            tracer.Color = ColorSequence.new(player.Team and player.TeamColor.Color or Color3.fromRGB(0, 170, 255))
-            tracer.Width0 = 0.2
-            tracer.Width1 = 0.2
-            
-            local attachment0 = Instance.new("Attachment")
-            attachment0.Parent = Workspace.CurrentCamera
-            local attachment1 = Instance.new("Attachment")
-            attachment1.Parent = player.Character:WaitForChild("HumanoidRootPart")
-            
-            tracer.Attachment0 = attachment0
-            tracer.Attachment1 = attachment1
-            tracer.Parent = Workspace.CurrentCamera
+RegisterCommand("gravity", "Changes gravity", function(args)
+    local gravity = tonumber(args[1]) or 196.2
+    Workspace.Gravity = gravity
+    OutputMessage("Gravity set to " .. gravity, Color3.fromRGB(200, 200, 100))
+end, {"grav"}, "World")
+
+RegisterCommand("time", "Changes time of day", function(args)
+    local time = args[1] or "12:00"
+    if tonumber(time) then
+        Lighting.ClockTime = tonumber(time)
+    else
+        local hours, minutes = time:match("(%d+):(%d+)")
+        if hours and minutes then
+            Lighting.ClockTime = tonumber(hours) + tonumber(minutes)/60
         end
     end
-    OutputMessage("Tracers enabled for " .. #players .. " player(s)", Color3.fromRGB(255, 100, 255))
-end, {}, "Visual")
+    OutputMessage("Time set to " .. Lighting.ClockTime, Color3.fromRGB(200, 200, 100))
+end, {}, "World")
 
-RegisterCommand("unesp", "Disables ESP", function(args, executor)
-    local players = GetPlayers(args[1] or "all", executor)
-    
-    for _, player in ipairs(players) do
-        if player.Character then
-            for _, child in ipairs(player.Character:GetChildren()) do
-                if child.Name == "AdminESP" and child:IsA("Highlight") then
-                    child:Destroy()
-                end
-                if child.Name == "ESPName" and child:IsA("BillboardGui") then
-                    child:Destroy()
-                end
-            end
-        end
-        -- Clean up tracers
-        for _, beam in ipairs(Workspace.CurrentCamera:GetChildren()) do
-            if beam.Name == "AdminTracer" and beam:IsA("Beam") then
-                beam:Destroy()
-            end
-        end
-    end
-    OutputMessage("ESP disabled for " .. #players .. " player(s)", Color3.fromRGB(255, 100, 255))
-end, {}, "Visual")
+RegisterCommand("brightness", "Changes brightness", function(args)
+    local brightness = tonumber(args[1]) or 1
+    Lighting.Brightness = brightness
+    OutputMessage("Brightness set to " .. brightness, Color3.fromRGB(200, 200, 100))
+end, {}, "World")
 
--- TOOLS/ITEMS COMMANDS
 RegisterCommand("tools", "Gives all tools", function(args, executor)
     local players = GetPlayers(args[1] or "me", executor)
     for _, player in ipairs(players) do
@@ -914,99 +769,6 @@ RegisterCommand("tools", "Gives all tools", function(args, executor)
     OutputMessage("Collected all tools for " .. #players .. " player(s)", Color3.fromRGB(100, 255, 100))
 end, {"alltools"}, "Items")
 
-RegisterCommand("btools", "Gives building tools", function(args, executor)
-    local players = GetPlayers(args[1] or "me", executor)
-    local tools = {"Hammer", "Clone", "Rotate"}
-    for _, player in ipairs(players) do
-        for _, toolName in ipairs(tools) do
-            local tool = Instance.new("Tool")
-            tool.Name = toolName
-            tool.Parent = player.Backpack
-        end
-    end
-    OutputMessage("Building tools given to " .. #players .. " player(s)", Color3.fromRGB(100, 255, 100))
-end, {}, "Items")
-
-RegisterCommand("gear", "Gives gear by ID", function(args, executor)
-    local players = GetPlayers(args[1] or "me", executor)
-    local gearId = tonumber(args[2])
-    
-    if gearId then
-        for _, player in ipairs(players) do
-            local success, result = pcall(function()
-                return game:GetService("InsertService"):LoadAsset(gearId)
-            end)
-            if success then
-                for _, item in ipairs(result:GetChildren()) do
-                    if item:IsA("Tool") or item:IsA("HopperBin") then
-                        item.Parent = player.Backpack
-                    end
-                end
-            end
-        end
-        OutputMessage("Gear ID " .. gearId .. " given to " .. #players .. " player(s)", Color3.fromRGB(100, 255, 100))
-    end
-end, {}, "Items")
-
--- FUN/TAUNT COMMANDS
-RegisterCommand("spam", "Spams message in chat", function(args, executor)
-    local message = table.concat(args, " ")
-    local count = 10
-    
-    for i = 1, count do
-        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(message, "All")
-        wait(0.5)
-    end
-    OutputMessage("Spammed message 10 times", Color3.fromRGB(255, 100, 255))
-end, {}, "Fun")
-
-RegisterCommand("play", "Plays audio by ID", function(args, executor)
-    local soundId = tonumber(args[1])
-    if soundId then
-        local sound = Instance.new("Sound")
-        sound.SoundId = "rbxassetid://" .. soundId
-        sound.Volume = 1
-        sound.Parent = Workspace
-        sound:Play()
-        OutputMessage("Playing audio ID: " .. soundId, Color3.fromRGB(200, 100, 255))
-    end
-end, {}, "Fun")
-
-RegisterCommand("size", "Changes player size", function(args, executor)
-    local players = GetPlayers(args[1] or "me", executor)
-    local scale = tonumber(args[2]) or 2
-    
-    for _, player in ipairs(players) do
-        if player.Character then
-            for _, part in ipairs(player.Character:GetChildren()) do
-                if part:IsA("BasePart") then
-                    part.Size = part.Size * scale
-                end
-            end
-        end
-    end
-    OutputMessage("Size changed to " .. scale .. "x for " .. #players .. " player(s)", Color3.fromRGB(200, 100, 255))
-end, {}, "Fun")
-
-RegisterCommand("spin", "Makes players spin", function(args, executor)
-    local players = GetPlayers(args[1] or "me", executor)
-    local speed = tonumber(args[2]) or 50
-    
-    for _, player in ipairs(players) do
-        if player.Character then
-            local root = player.Character:FindFirstChild("HumanoidRootPart")
-            if root then
-                local bodyAngularVelocity = Instance.new("BodyAngularVelocity")
-                bodyAngularVelocity.MaxTorque = Vector3.new(40000, 40000, 40000)
-                bodyAngularVelocity.AngularVelocity = Vector3.new(0, speed, 0)
-                bodyAngularVelocity.Parent = root
-                OutputMessage("Spinning " .. player.Name .. " at speed " .. speed, Color3.fromRGB(200, 100, 255))
-            end
-        end
-    end
-end, {}, "Fun")
-
--- SERVER COMMANDS
 RegisterCommand("rejoin", "Rejoins the game", function(args, executor)
     TeleportService:Teleport(game.PlaceId, executor)
 end, {"rj"}, "Server")
@@ -1031,11 +793,6 @@ RegisterCommand("serverhop", "Hops to a different server", function(args, execut
     end
 end, {"hop"}, "Server")
 
-RegisterCommand("copylink", "Copies server link to clipboard", function()
-    setclipboard("https://www.roblox.com/games/" .. game.PlaceId .. "?code=" .. game.JobId)
-    OutputMessage("Server link copied to clipboard", Color3.fromRGB(100, 255, 100))
-end, {"copy", "link"}, "Server")
-
 -- UTILITY COMMANDS
 RegisterCommand("clear", "Clears the output", function()
     for _, child in ipairs(OutputScrolling:GetChildren()) do
@@ -1055,7 +812,7 @@ RegisterCommand("help", "Shows all commands", function(args)
         table.insert(categories[cmd.Category], name)
     end
     
-    OutputMessage("=== SUPERSKKSKSJSJSJ'S ADMIN - INFINITE YIELD STYLE ===", Settings.HighlightColor)
+    OutputMessage("=== MOBILE ADMIN COMMANDS ===", Settings.HighlightColor)
     OutputMessage("Prefix: " .. Settings.Prefix, Color3.fromRGB(200, 200, 200))
     OutputMessage("Commands:", Color3.fromRGB(200, 200, 200))
     
@@ -1066,55 +823,13 @@ RegisterCommand("help", "Shows all commands", function(args)
             local cmd = Commands[cmdName]
             local aliasText = ""
             if #cmd.Aliases > 0 then
-                aliasText = " (Aliases: " .. table.concat(cmd.Aliases, ", ") .. ")"
+                aliasText = " (" .. table.concat(cmd.Aliases, ", ") .. ")"
             end
-            OutputMessage("  " .. Settings.Prefix .. cmdName .. " - " .. cmd.Description .. aliasText, Color3.fromRGB(220, 220, 220))
+            OutputMessage("  " .. Settings.Prefix .. cmdName .. aliasText, Color3.fromRGB(220, 220, 220))
+            OutputMessage("    " .. cmd.Description, Color3.fromRGB(180, 180, 180))
         end
     end
 end, {"h", "commands"}, "Utility")
-
-RegisterCommand("prefix", "Changes command prefix", function(args)
-    if args[1] then
-        Settings.Prefix = args[1]
-        OutputMessage("Prefix changed to: " .. Settings.Prefix, Settings.HighlightColor)
-    else
-        OutputMessage("Current prefix: " .. Settings.Prefix, Settings.HighlightColor)
-    end
-end, {}, "Utility")
-
-RegisterCommand("history", "Shows command history", function()
-    OutputMessage("=== Command History ===", Settings.HighlightColor)
-    for i, cmd in ipairs(CommandHistory) do
-        OutputMessage(i .. ". " .. cmd, Color3.fromRGB(200, 200, 200))
-    end
-end, {}, "Utility")
-
--- ADVANCED COMMANDS
-RegisterCommand("explorer", "Opens object explorer", function()
-    -- Create explorer GUI
-    local explorerFrame = Instance.new("Frame")
-    explorerFrame.Name = "Explorer"
-    explorerFrame.Parent = ScreenGui
-    explorerFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-    explorerFrame.BackgroundTransparency = 0.1
-    explorerFrame.BorderSizePixel = 0
-    explorerFrame.Position = UDim2.new(0.6, 0, 0.1, 0)
-    explorerFrame.Size = UDim2.new(0.35, 0, 0.8, 0)
-    explorerFrame.Active = true
-    explorerFrame.Draggable = true
-    
-    OutputMessage("Explorer opened - Drag to move", Settings.HighlightColor)
-end, {"dex"}, "Advanced")
-
-RegisterCommand("saveinstance", "Saves the game instance", function()
-    OutputMessage("Save instance feature would be here", Color3.fromRGB(200, 100, 100))
-    CreateNotification("Save Instance", "This feature requires additional setup", Color3.fromRGB(200, 100, 100), 3)
-end, {"save"}, "Advanced")
-
-RegisterCommand("remotespy", "Enables remote spy", function()
-    OutputMessage("Remote spy enabled", Color3.fromRGB(200, 100, 100))
-    CreateNotification("Remote Spy", "Monitoring remote events", Settings.HighlightColor, 3)
-end, {}, "Advanced")
 
 -- ==================== COMMAND PARSER ====================
 
@@ -1143,10 +858,18 @@ local function ParseCommand(text, executor)
             OutputMessage("Command not found: " .. commandName, Color3.fromRGB(255, 50, 50))
             CreateNotification("Command Error", "Unknown command: " .. commandName, Color3.fromRGB(255, 50, 50), 2)
         end
+    else
+        OutputMessage("Invalid command: " .. text, Color3.fromRGB(255, 50, 50))
     end
 end
 
--- ==================== UI EVENTS ====================
+-- ==================== MOBILE UI EVENTS ====================
+
+-- Mobile Toggle Button
+MobileToggleButton.MouseButton1Click:Connect(function()
+    OutputFrame.Visible = not OutputFrame.Visible
+    MobileToggleButton.Text = OutputFrame.Visible and "CLOSE" or "OPEN"
+end)
 
 -- Command Bar Input
 CommandInput.FocusLost:Connect(function(enterPressed)
@@ -1154,92 +877,126 @@ CommandInput.FocusLost:Connect(function(enterPressed)
         local text = CommandInput.Text
         CommandInput.Text = ""
         CommandBar.Visible = false
-        ParseCommand(text, LocalPlayer)
+        ParseCommand(Settings.Prefix .. text, LocalPlayer)
     end
 end)
 
-CommandInput:GetPropertyChangedSignal("Text"):Connect(function()
-    if CommandInput.Text == "" then
-        CommandBar.Visible = false
+CloseCmdButton.MouseButton1Click:Connect(function()
+    CommandBar.Visible = false
+    CommandInput.Text = ""
+end)
+
+-- Mobile Command Input
+MobileSendButton.MouseButton1Click:Connect(function()
+    local text = MobileInputBox.Text
+    if text ~= "" then
+        MobileInputBox.Text = ""
+        ParseCommand(Settings.Prefix .. text, LocalPlayer)
+    end
+end)
+
+MobileInputBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        local text = MobileInputBox.Text
+        if text ~= "" then
+            MobileInputBox.Text = ""
+            ParseCommand(Settings.Prefix .. text, LocalPlayer)
+        end
     end
 end)
 
 -- Toggle Output Frame
 CloseButton.MouseButton1Click:Connect(function()
     OutputFrame.Visible = false
+    MobileToggleButton.Text = "OPEN"
 end)
 
 MinimizeButton.MouseButton1Click:Connect(function()
-    OutputScrolling.Visible = not OutputScrolling.Visible
-    if OutputScrolling.Visible then
+    local isMinimized = OutputScrolling.Visible
+    OutputScrolling.Visible = isMinimized
+    MobileQuickBar.Visible = isMinimized
+    MobileCommandInput.Visible = isMinimized
+    if isMinimized then
         MinimizeButton.Text = "_"
         OutputFrame.Size = Settings.GUISize
     else
         MinimizeButton.Text = "+"
-        OutputFrame.Size = UDim2.new(Settings.GUISize.X.Scale, Settings.GUISize.X.Offset, 0, 30)
+        OutputFrame.Size = UDim2.new(Settings.GUISize.X.Scale, Settings.GUISize.X.Offset, 0, isMobile and 40 or 30)
     end
 end)
 
--- Keybinds
-UserInputService.InputBegan:Connect(function(input, processed)
-    if processed then return end
-    
-    -- Toggle Command Bar
-    if input.KeyCode == Settings.Keybinds.CommandBar then
-        if not CommandBar.Visible then
-            CommandBar.Visible = true
-            CommandInput:CaptureFocus()
-        end
-    end
-    
-    -- Toggle Output Frame
-    if input.KeyCode == Settings.Keybinds.ToggleGUI then
-        OutputFrame.Visible = not OutputFrame.Visible
-    end
-    
-    -- Escape to close command bar
-    if input.KeyCode == Enum.KeyCode.Escape then
-        if CommandBar.Visible then
-            CommandBar.Visible = false
-            CommandInput.Text = ""
-        end
-    end
-    
-    -- Command history navigation
-    if CommandBar.Visible and CommandInput:IsFocused() then
-        if input.KeyCode == Enum.KeyCode.Up then
-            if HistoryIndex > 1 then
-                HistoryIndex = HistoryIndex - 1
-                CommandInput.Text = CommandHistory[HistoryIndex] or ""
-            elseif HistoryIndex == 1 then
-                CommandInput.Text = CommandHistory[1] or ""
+-- Mobile touch gestures
+if isMobile then
+    -- Double tap to open command bar
+    local lastTap = 0
+    OutputFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            local currentTime = tick()
+            if currentTime - lastTap < 0.5 then
+                -- Double tap detected
+                CommandBar.Visible = true
+                CommandInput:CaptureFocus()
             end
-        elseif input.KeyCode == Enum.KeyCode.Down then
-            if HistoryIndex < #CommandHistory then
-                HistoryIndex = HistoryIndex + 1
-                CommandInput.Text = CommandHistory[HistoryIndex] or ""
-            elseif HistoryIndex == #CommandHistory then
-                HistoryIndex = #CommandHistory + 1
-                CommandInput.Text = ""
+            lastTap = currentTime
+        end
+    end)
+    
+    -- Swipe to clear output
+    local startPos
+    OutputFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            startPos = input.Position
+        end
+    end)
+    
+    OutputFrame.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch and startPos then
+            local endPos = input.Position
+            local delta = startPos - endPos
+            if math.abs(delta.Y) > 50 and math.abs(delta.X) < 30 then
+                -- Swipe detected
+                if delta.Y > 0 then
+                    -- Swipe up
+                    ParseCommand(Settings.Prefix .. "clear", LocalPlayer)
+                end
             end
         end
-    end
-end)
+    end)
+end
+
+-- Keybinds (for non-mobile)
+if not isMobile then
+    UserInputService.InputBegan:Connect(function(input, processed)
+        if processed then return end
+        
+        -- Toggle Command Bar
+        if input.KeyCode == Settings.Keybinds.CommandBar then
+            if not CommandBar.Visible then
+                CommandBar.Visible = true
+                CommandInput:CaptureFocus()
+            end
+        end
+        
+        -- Toggle Output Frame
+        if input.KeyCode == Settings.Keybinds.ToggleGUI then
+            OutputFrame.Visible = not OutputFrame.Visible
+        end
+    end)
+end
 
 -- ==================== INITIALIZATION ====================
 
 -- Anti-AFK
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local lastActivity = tick()
-
-Players.LocalPlayer.Idled:Connect(function()
-    if Settings.AntiBan then
-        VirtualInputManager:SendKeyEvent(true, "W", false, nil)
-        task.wait(0.1)
-        VirtualInputManager:SendKeyEvent(false, "W", false, nil)
-        lastActivity = tick()
-    end
-end)
+if Settings.AntiBan then
+    Players.LocalPlayer.Idled:Connect(function()
+        if Settings.AntiBan then
+            local VirtualInputManager = game:GetService("VirtualInputManager")
+            VirtualInputManager:SendKeyEvent(true, "W", false, nil)
+            task.wait(0.1)
+            VirtualInputManager:SendKeyEvent(false, "W", false, nil)
+        end
+    end)
+end
 
 -- Auto Clean
 if Settings.AutoClean then
@@ -1256,17 +1013,25 @@ end
 
 -- Initial Output
 task.wait(1)
-OutputMessage("=== Superskksksjsjsj's Admin Script ===", Settings.HighlightColor)
-OutputMessage("Version: 2.0.0 - INFINITE YIELD STYLE", Color3.fromRGB(200, 200, 200))
+OutputMessage("=== Superskksksjsjsj's Mobile Admin ===", Settings.HighlightColor)
+OutputMessage("Version: 2.1.0 - TOUCH FRIENDLY", Color3.fromRGB(200, 200, 200))
 OutputMessage("Loaded successfully!", Color3.fromRGB(100, 255, 100))
-OutputMessage("Press '" .. Settings.Keybinds.CommandBar.Name .. "' to open command bar", Color3.fromRGB(200, 200, 200))
-OutputMessage("Press '" .. Settings.Keybinds.ToggleGUI.Name .. "' to toggle output window", Color3.fromRGB(200, 200, 200))
+if isMobile then
+    OutputMessage("📱 Mobile Mode: Active", Color3.fromRGB(0, 170, 255))
+    OutputMessage("Use buttons above for quick commands", Color3.fromRGB(200, 200, 200))
+    OutputMessage("Type commands in box below", Color3.fromRGB(200, 200, 200))
+    OutputMessage("Double tap window to open full command bar", Color3.fromRGB(200, 200, 200))
+    OutputMessage("Swipe up on window to clear output", Color3.fromRGB(200, 200, 200))
+else
+    OutputMessage("Press '" .. Settings.Keybinds.CommandBar.Name .. "' to open command bar", Color3.fromRGB(200, 200, 200))
+    OutputMessage("Press '" .. Settings.Keybinds.ToggleGUI.Name .. "' to toggle output window", Color3.fromRGB(200, 200, 200))
+end
 OutputMessage("Type ';help' for command list", Color3.fromRGB(200, 200, 200))
 
 -- Welcome Notification
 CreateNotification(
-    "Superskksksjsjsj's Admin", 
-    "Script loaded successfully!\nPress " .. Settings.Keybinds.CommandBar.Name .. " for command bar\nPress " .. Settings.Keybinds.ToggleGUI.Name .. " for output",
+    "Superskksksjsjsj's Mobile Admin", 
+    "Script loaded successfully!\n" .. (isMobile and "📱 Mobile mode active" or "Press F3 to toggle GUI"),
     Settings.HighlightColor,
     5
 )
@@ -1274,9 +1039,31 @@ CreateNotification(
 -- Make GUI responsive
 local function UpdateUIScale()
     local viewportSize = Workspace.CurrentCamera.ViewportSize
-    local scale = math.min(viewportSize.X / 1920, viewportSize.Y / 1080)
-    OutputFrame.Size = UDim2.new(0.35 * scale, 0, 0.6 * scale, 0)
-    CommandBar.Size = UDim2.new(0.4 * scale, 0, 0, 35)
+    
+    if isMobile then
+        -- Mobile scaling
+        local scale = math.min(viewportSize.X / 1080, viewportSize.Y / 1920)
+        OutputFrame.Size = UDim2.new(0.9, 0, 0.8, 0)
+        MobileToggleButton.Size = UDim2.new(0.12, 0, 0.06, 0)
+        MobileToggleButton.Position = UDim2.new(0.85, 0, 0.02, 0)
+        
+        -- Adjust text sizes for mobile
+        Title.TextSize = 16
+        OutputScrolling.ScrollBarThickness = 8
+        MobileInputBox.TextSize = 18
+        MobileSendButton.TextSize = 16
+        
+        for _, child in ipairs(MobileQuickBar:GetChildren()) do
+            if child:IsA("TextButton") then
+                child.TextSize = 14
+            end
+        end
+    else
+        -- Desktop scaling
+        local scale = math.min(viewportSize.X / 1920, viewportSize.Y / 1080)
+        OutputFrame.Size = UDim2.new(0.35 * scale, 0, 0.6 * scale, 0)
+        CommandBar.Size = UDim2.new(0.4 * scale, 0, 0, 35)
+    end
 end
 
 Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(UpdateUIScale)
